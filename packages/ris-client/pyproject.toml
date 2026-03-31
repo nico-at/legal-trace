@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ris-client"
+version = "0.1.0"
+description = "Python client for the Austrian RIS OGD API v2.6"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28,<1.0",
+    "pydantic>=2.0,<3.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib -m 'not integration'"
+markers = [
+    "integration: Tests that hit the real RIS API (run with -m integration)",
+]

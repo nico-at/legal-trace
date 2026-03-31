@@ -1,0 +1,6 @@
+.*
+_*
+
+*.egg-info
+
+!.gitignore

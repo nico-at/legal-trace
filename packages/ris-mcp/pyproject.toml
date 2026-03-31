@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ris-mcp"
+version = "0.1.0"
+description = "MCP server exposing Austrian legal sources via RIS API"
+requires-python = ">=3.12"
+dependencies = [
+    "ris-client",
+    "mcp[cli]>=1.0,<2.0",
+]
+
+[tool.uv.sources]
+ris-client = { workspace = true }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib -m 'not integration'"
+markers = [
+    "integration: Tests that hit the real RIS API (run with -m integration)",
+]

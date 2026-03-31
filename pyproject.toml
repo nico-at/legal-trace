@@ -1,0 +1,26 @@
+[project]
+name = "legal-trace"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+ris-client = { workspace = true }
+ris-mcp = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "ris-client",
+    "ris-mcp",
+    "pytest>=8.0,<9.0",
+    "pytest-asyncio>=0.24,<1.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "--import-mode=importlib -m 'not integration'"
+markers = [
+    "integration: Tests that hit the real RIS API (run with -m integration)",
+]
