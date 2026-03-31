@@ -2,5 +2,9 @@
 _*
 
 *.egg-info
+*.pyc
+dist/
+build/
 
 !.gitignore
+!__init__.py
