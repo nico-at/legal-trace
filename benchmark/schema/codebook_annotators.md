@@ -1,6 +1,7 @@
 # Annotationsanleitung
 
 **Version:** 0.5.0
+
 **Stichtag der Rechtslage:** 01.01.2026
 
 ---

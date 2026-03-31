@@ -1,8 +1,11 @@
 # Internes Codebook
 
 **Version:** 0.5.0
+
 **Stichtag der Rechtslage:** 01.01.2026
+
 **Schema:** [annotation_schema.json](annotation_schema.json)
+
 **Annotationsregeln:** [codebook_annotators.md](codebook_annotators.md)
 
 ---
