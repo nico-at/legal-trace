@@ -260,6 +260,95 @@ CASE_LAW_RAW_DOC_DECISION = {
 }
 
 
+CASE_LAW_RAW_DOC_VFGH = {
+    "Data": {
+        "Metadaten": {
+            "Technisch": {
+                "ID": "JFT_20241003_23G03504_00",
+                "Applikation": "Vfgh",
+                "Organ": "VfGH",
+            },
+            "Allgemein": {
+                "DokumentUrl": "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Vfgh&Dokumentnummer=JFT_20241003_23G03504_00",
+            },
+            "Judikatur": {
+                "Dokumenttyp": "Text",
+                "Geschaeftszahl": {
+                    "item": "G3504/2023 (G3504/2023-14)"
+                },
+                "Entscheidungsdatum": "2024-10-03",
+                "EuropeanCaseLawIdentifier": "ECLI:AT:VFGH:2024:G3504.2023",
+                "Normen": {
+                    "item": ["B-VG Art140 Abs1 Z1 litb", "VwGVG \u00a78a"]
+                },
+                "Schlagworte": "Verfahrenshilfe, Rechtsschutz",
+                "GesamteEntscheidungUrl": "",
+                "RechtssaetzeUrl": "",
+                "Vfgh": {
+                    "Entscheidungsart": "Erkenntnis",
+                    "Gericht": "Verfassungsgerichtshof (VfGH)",
+                    "Indizes": {
+                        "item": "10/07 Verfassungs- und Verwaltungsgerichtsbarkeit"
+                    },
+                    "Sammlungsnummer": "20697",
+                    "Leitsatz": "Verfassungswidrigkeit einer Bestimmung des VwGVG betreffend Verfahrenshilfe",
+                },
+            },
+        },
+        "Dokumentliste": {
+            "ContentReference": {
+                "ContentType": "MainDocument",
+                "Name": "Hauptdokument",
+                "Urls": {
+                    "ContentUrl": {
+                        "DataType": "Html",
+                        "Url": "https://www.ris.bka.gv.at/Dokumente/Vfgh/JFT_20241003_23G03504_00/JFT_20241003_23G03504_00.html",
+                    }
+                },
+            }
+        },
+    }
+}
+
+CASE_LAW_RAW_DOC_VWGH = {
+    "Data": {
+        "Metadaten": {
+            "Technisch": {
+                "ID": "JWT_2025210033_20260121L00",
+                "Applikation": "Vwgh",
+                "Organ": "VwGH",
+            },
+            "Allgemein": {
+                "DokumentUrl": "https://www.ris.bka.gv.at/Dokument.wxe?Abfrage=Vwgh&Dokumentnummer=JWT_2025210033_20260121L00",
+            },
+            "Judikatur": {
+                "Dokumenttyp": "Text",
+                "Geschaeftszahl": {
+                    "item": "Ra 2025/21/0033"
+                },
+                "Entscheidungsdatum": "2026-01-21",
+                "EuropeanCaseLawIdentifier": "ECLI:AT:VWGH:2026:RA2025210033.L00",
+                "Normen": {
+                    "item": ["FrPolG 2005 \u00a776 Abs2 Z2", "VwGG \u00a734 Abs1"]
+                },
+                "Schlagworte": "Fremdenrecht, Asyl",
+                "GesamteEntscheidungUrl": "",
+                "RechtssaetzeUrl": "",
+                "Vwgh": {
+                    "Entscheidungsart": "Beschluss",
+                    "DokumentnummerTyp": "L",
+                    "Gericht": "Verwaltungsgerichtshof (VwGH)",
+                    "Indizes": {
+                        "item": ["41/02 Asylrecht", "41/02 Passrecht Fremdenrecht"]
+                    },
+                },
+            },
+        },
+        "Dokumentliste": None,
+    }
+}
+
+
 def make_search_result(doc_refs, hits=None):
     if hits is None:
         hits = len(doc_refs) if isinstance(doc_refs, list) else (1 if doc_refs else 0)

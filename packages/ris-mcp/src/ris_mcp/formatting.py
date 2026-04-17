@@ -59,6 +59,10 @@ def format_case_law_list(docs: list[CaseLawDocument]) -> str:
         )
         lines.append(f"  Norms: {norms}{suffix}")
 
+        if doc.leitsatz:
+            truncated = doc.leitsatz[:200] + "..." if len(doc.leitsatz) > 200 else doc.leitsatz
+            lines.append(f"  Leitsatz: {truncated}")
+
         if doc.linked_decisions:
             lead = doc.linked_decisions[0]
             lines.append(
@@ -73,6 +77,8 @@ def format_decision(doc: CaseLawDocument, text: str | None = None) -> str:
         f"{doc.document_type}: {doc.court} {case_nums}",
         f"Date: {doc.decision_date}",
     ]
+    if doc.decision_type:
+        lines.append(f"Decision type: {doc.decision_type}")
     if doc.ecli:
         lines.append(f"ECLI: {doc.ecli}")
     if doc.norms:
@@ -85,6 +91,9 @@ def format_decision(doc: CaseLawDocument, text: str | None = None) -> str:
             lines.append(f"  - {ld.court} {ld.case_number} ({ld.decision_date})")
         if len(doc.linked_decisions) > 10:
             lines.append(f"  ... and {len(doc.linked_decisions) - 10} more")
+
+    if doc.leitsatz:
+        lines.append(f"Leitsatz: {doc.leitsatz}")
 
     if text:
         lines.append(f"\n--- Full Text ---\n{text}")

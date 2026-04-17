@@ -14,15 +14,7 @@ from ris_client.queries import federal_law as federal_law_query
 
 
 class RISClient:
-    """High-level async client for the Austrian RIS OGD API.
-
-    Usage::
-
-        async with RISClient() as client:
-            results = await client.search_federal_law(title="Mietrechtsgesetz")
-            for law in results:
-                print(law.short_title, law.section)
-    """
+    """High-level async client for the Austrian RIS OGD API."""
 
     def __init__(
         self,
@@ -61,7 +53,6 @@ class RISClient:
         page_size: PageSize = PageSize.ONE_HUNDRED,
         max_pages: int | None = None,
     ) -> list[FederalLawDocument]:
-        """Search consolidated federal law (Bundesrecht konsolidiert)"""
         params = federal_law_query.build_search_params(
             keywords=keywords,
             title=title,
@@ -106,10 +97,10 @@ class RISClient:
         reference: str | None = None,
         sort_column: str | None = None,
         sort_direction: SortDirection | None = None,
+        application: Application = Application.JUSTICE,
         page_size: PageSize = PageSize.ONE_HUNDRED,
         max_pages: int | None = None,
     ) -> list[CaseLawDocument]:
-        """Search case law (Judikatur / Justiz)"""
         params = case_law_query.build_search_params(
             keywords=keywords,
             norm=norm,
@@ -129,7 +120,7 @@ class RISClient:
             sort_direction=sort_direction,
         )
         raw_results = await self._http.search(
-            Application.JUSTICE,
+            application,
             params,
             page_size=page_size,
             max_pages=max_pages,
@@ -137,5 +128,4 @@ class RISClient:
         return [CaseLawDocument.from_raw(doc) for doc in raw_results]
 
     async def fetch_document(self, url: str) -> str:
-        """Fetch the raw content of a document by URL."""
         return await self._http.fetch_document(url)

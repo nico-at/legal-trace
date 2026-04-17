@@ -2,7 +2,12 @@ import copy
 
 from ris_client.models import CaseLawDocument, FederalLawDocument
 
-from .fixtures.api_responses import CASE_LAW_RAW_DOC, FEDERAL_LAW_RAW_DOC
+from .fixtures.api_responses import (
+    CASE_LAW_RAW_DOC,
+    CASE_LAW_RAW_DOC_VFGH,
+    CASE_LAW_RAW_DOC_VWGH,
+    FEDERAL_LAW_RAW_DOC,
+)
 
 
 def test_section_number_falls_back_to_artikelnummer():
@@ -47,3 +52,26 @@ def test_missing_justiz_block_doesnt_crash():
     doc = CaseLawDocument.from_raw(raw)
     assert doc.court == "OGH"
     assert doc.linked_decisions == []
+
+
+def test_entscheidungstexte_as_string_doesnt_crash():
+    raw = copy.deepcopy(CASE_LAW_RAW_DOC)
+    raw["Data"]["Metadaten"]["Judikatur"]["Justiz"]["Entscheidungstexte"] = ""
+    doc = CaseLawDocument.from_raw(raw)
+    assert doc.linked_decisions == []
+
+
+def test_vfgh_document_parsed_correctly():
+    doc = CaseLawDocument.from_raw(CASE_LAW_RAW_DOC_VFGH)
+    assert "VfGH" in doc.court
+    assert doc.decision_type == "Erkenntnis"
+    assert "Verfassungswidrigkeit" in doc.leitsatz
+    assert doc.case_numbers == ["G3504/2023 (G3504/2023-14)"]
+
+
+def test_vwgh_document_parsed_correctly():
+    doc = CaseLawDocument.from_raw(CASE_LAW_RAW_DOC_VWGH)
+    assert "VwGH" in doc.court
+    assert doc.decision_type == "Beschluss"
+    assert doc.leitsatz == ""
+    assert doc.case_numbers == ["Ra 2025/21/0033"]

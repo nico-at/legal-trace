@@ -6,6 +6,7 @@ from datetime import date
 from mcp.server.fastmcp import Context, FastMCP
 
 from ris_client import (
+    Application,
     LegalDomain,
     PageSize,
     RISClient,
@@ -20,10 +21,14 @@ from ris_mcp.formatting import (
     format_legislation_list,
 )
 
-# The benchmark reference date - all law queries default to this Stichtag
 REFERENCE_DATE = date(2026, 1, 1)
 
-# HTML cleaning patterns
+_COURT_APP: dict[str, Application] = {
+    "OGH": Application.JUSTICE,
+    "VfGH": Application.CONSTITUTIONAL_COURT,
+    "VwGH": Application.ADMINISTRATIVE_COURT,
+}
+
 _STYLE_RE = re.compile(r"<style[^>]*>.*?</style>", re.DOTALL | re.IGNORECASE)
 _SCRIPT_RE = re.compile(r"<script[^>]*>.*?</script>", re.DOTALL | re.IGNORECASE)
 _HEAD_RE = re.compile(r"<head[^>]*>.*?</head>", re.DOTALL | re.IGNORECASE)
@@ -88,6 +93,7 @@ async def search_legislation(
     client = _get_client(ctx)
     results = await client.search_federal_law(
         keywords=query,
+        index=legal_domain,
         version_date=REFERENCE_DATE,
         page_size=PageSize.ONE_HUNDRED,
         max_pages=3,
@@ -100,17 +106,24 @@ async def get_law_toc(
     ctx: Context,
     law_number: str | None = None,
     title: str | None = None,
+    section_from: str | None = None,
+    section_to: str | None = None,
 ) -> str:
     """Get the table of contents (all sections) of a specific Austrian law.
 
     Use this to understand the structure of a law before looking up
     specific provisions. Provide either law_number or title.
 
+    For large laws (e.g. ABGB with 1000+ sections), use section_from/section_to
+    to request only a range.
+
     Args:
         law_number: The Gesetzesnummer (e.g. "10002531" for MRG).
             Use search_legislation to find this number.
         title: Law title or abbreviation (e.g. "Mietrechtsgesetz", "MRG").
             Used as fallback if law_number is not provided.
+        section_from: Start of section range (e.g. "1290"). Optional.
+        section_to: End of section range (e.g. "1300"). Optional.
     """
     if not law_number and not title:
         return "Error: Provide either law_number or title."
@@ -119,6 +132,9 @@ async def get_law_toc(
     results = await client.search_federal_law(
         law_number=law_number,
         title=title if not law_number else None,
+        section_type=SectionType.ALL if section_from or section_to else None,
+        section_from=section_from,
+        section_to=section_to,
         version_date=REFERENCE_DATE,
         sort_column="ArtikelParagraphAnlage",
         sort_direction=SortDirection.ASCENDING,
@@ -150,13 +166,12 @@ async def get_law_text(
 
     client = _get_client(ctx)
 
-    section_type = SectionType.PARAGRAPH
     section_num = section or "0"
 
     results = await client.search_federal_law(
         law_number=law_number,
         title=title if not law_number else None,
-        section_type=section_type,
+        section_type=SectionType.ALL,
         section_from=section_num,
         section_to=section_num,
         version_date=REFERENCE_DATE,
@@ -181,25 +196,54 @@ async def get_law_text(
 
 @mcp.tool()
 async def search_case_law(
+    court: str,
     ctx: Context,
     query: str | None = None,
     norm: str | None = None,
     legal_domain: str | None = None,
     subject_area: str | None = None,
+    document_type: str | None = None,
 ) -> str:
     """Search for Austrian court decisions and legal principles (Rechtssätze).
 
-    Searches the OGH (Supreme Court) case law database. Returns Rechtssätze
-    (condensed legal principles) which identify leading decisions.
-
     Args:
-        query: Free-text search keywords
+        court: Which supreme court to search. One of "OGH", "VfGH", "VwGH".
+        query: Search keywords (RIS FulltextSearchExpression). Space between
+            words means AND. Use quotes for exact phrases. Keep queries short
+            (2-3 terms max), especially when searching in Rechtssätze.
         norm: Search by legal norm reference (e.g. "MRG § 30", "ABGB § 1118")
-        legal_domain: "Zivilrecht" or "Strafrecht"
-        subject_area: Specific subject area (e.g. "Arbeitsrecht", "Bestandrecht")
+        legal_domain: "Zivilrecht" or "Strafrecht" (OGH only)
+        subject_area: Specific subject area (OGH only). Valid values:
+            "Amtsdelikte/Korruption", "Amtshaftung inkl. StEG",
+            "Anfechtungsrecht", "Arbeitsrecht", "Bestandrecht",
+            "Datenschutzrecht", "Erbrecht und Verlassenschaftsverfahren",
+            "Erwachsenenschutzrecht", "Exekutionsrecht",
+            "Familienrecht (ohne Unterhalt)", "Finanzstrafsachen",
+            "Gewerblicher Rechtsschutz", "Grundbuchsrecht", "Grundrechte",
+            "Insolvenzrecht",
+            "Internationales Privat- und Zivilverfahrensrecht",
+            "Jugendstrafsachen", "Kartellrecht", "Klauselentscheidungen",
+            "Konsumentenschutz und Produkthaftung", "Medienrecht",
+            "Persönlichkeitsschutzrecht", "Schadenersatz nach Verkehrsunfall",
+            "Schlepperei/FPG", "Schiedsverfahrensrecht", "Sexualdelikte",
+            "Sozialrecht", "Standes- und Disziplinarrecht für Anwälte",
+            "Suchtgiftdelikte", "Transportrecht", "Unionsrecht",
+            "Unterbringungs- und Heimaufenthaltsrecht",
+            "Unterhaltsrecht inkl. UVG",
+            "Unternehmens-, Gesellschafts- und Wertpapierrecht",
+            "Urheberrecht", "Versicherungsvertragsrecht",
+            "Wirtschaftsstrafsachen", "Wohnungseigentumsrecht",
+            "Zivilverfahrensrecht"
+        document_type: What to search in. One of "Rechtssaetze" (legal
+            principles, default), "Entscheidungstexte" (full decision texts),
+            or "Both".
     """
     if not query and not norm:
         return "Error: Provide either query or norm."
+
+    application = _COURT_APP.get(court)
+    if application is None:
+        return f"Error: court must be one of {list(_COURT_APP.keys())}, got '{court}'"
 
     client = _get_client(ctx)
 
@@ -210,20 +254,39 @@ async def search_case_law(
         except ValueError:
             return f"Error: legal_domain must be 'Zivilrecht' or 'Strafrecht', got '{legal_domain}'"
 
+    search_principles = True
+    search_decisions = False
+    if document_type is not None:
+        dt = document_type.lower()
+        if dt == "entscheidungstexte":
+            search_principles = False
+            search_decisions = True
+        elif dt == "both":
+            search_principles = True
+            search_decisions = True
+        elif dt != "rechtssaetze":
+            return (
+                f"Error: document_type must be 'Rechtssaetze', "
+                f"'Entscheidungstexte', or 'Both', got '{document_type}'"
+            )
+
     results = await client.search_case_law(
         keywords=query,
         norm=norm,
         legal_domain=domain,
         subject_area=subject_area,
-        search_in_principles=True,
-        page_size=PageSize.FIFTY,
-        max_pages=2,
+        search_in_principles=search_principles,
+        search_in_decisions=search_decisions,
+        application=application,
+        page_size=PageSize.TEN,
+        max_pages=1,
     )
     return format_case_law_list(results)
 
 
 @mcp.tool()
 async def get_decision(
+    court: str,
     ctx: Context,
     case_number: str | None = None,
     legal_principle_number: str | None = None,
@@ -234,11 +297,16 @@ async def get_decision(
     or Rechtssatz. Provide either case_number or legal_principle_number.
 
     Args:
+        court: Which supreme court. One of "OGH", "VfGH", "VwGH".
         case_number: The Geschäftszahl (e.g. "2 Ob 156/15b")
-        legal_principle_number: The Rechtssatznummer (e.g. "RS0067816")
+        legal_principle_number: The Rechtssatznummer (e.g. "RS0067816", OGH only)
     """
     if not case_number and not legal_principle_number:
         return "Error: Provide either case_number or legal_principle_number."
+
+    application = _COURT_APP.get(court)
+    if application is None:
+        return f"Error: court must be one of {list(_COURT_APP.keys())}, got '{court}'"
 
     client = _get_client(ctx)
 
@@ -246,12 +314,14 @@ async def get_decision(
         results = await client.search_case_law(
             legal_principle_number=legal_principle_number,
             search_in_principles=True,
+            application=application,
             max_pages=1,
         )
     else:
         results = await client.search_case_law(
             case_number=case_number,
             search_in_decisions=True,
+            application=application,
             max_pages=1,
         )
 

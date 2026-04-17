@@ -138,6 +138,8 @@ class CaseLawDocument(BaseModel):
     subject_areas: list[str]
     legal_principle_numbers: list[str]
     linked_decisions: list[LinkedDecision]
+    leitsatz: str = ""
+    decision_type: str = ""
     document_url: str
     full_decision_url: str
     legal_principles_url: str
@@ -149,10 +151,12 @@ class CaseLawDocument(BaseModel):
         tech = meta["Technisch"]
         general = meta.get("Allgemein", {})
         jud = meta["Judikatur"]
-        justiz = jud.get("Justiz", {})
+        court_block = jud.get("Justiz") or jud.get("Vfgh") or jud.get("Vwgh") or {}
 
         linked = []
-        for item in _ensure_list(justiz.get("Entscheidungstexte", {}).get("item")):
+        entscheidungstexte = court_block.get("Entscheidungstexte", {})
+        et_items = entscheidungstexte.get("item") if isinstance(entscheidungstexte, dict) else None
+        for item in _ensure_list(et_items):
             linked.append(
                 LinkedDecision(
                     case_number=item.get("Geschaeftszahl", ""),
@@ -170,13 +174,15 @@ class CaseLawDocument(BaseModel):
             case_numbers=_extract_items(jud, "Geschaeftszahl"),
             decision_date=jud.get("Entscheidungsdatum", ""),
             ecli=jud.get("EuropeanCaseLawIdentifier", ""),
-            court=justiz.get("Gericht", tech.get("Organ", "")),
+            court=court_block.get("Gericht", tech.get("Organ", "")),
             norms=_extract_items(jud, "Normen"),
             keywords=_fix_encoding(jud.get("Schlagworte", "")),
-            legal_domains=_extract_items(justiz, "Rechtsgebiete"),
-            subject_areas=_extract_items(justiz, "Fachgebiete"),
-            legal_principle_numbers=_extract_items(justiz, "Rechtssatznummern"),
+            legal_domains=_extract_items(court_block, "Rechtsgebiete"),
+            subject_areas=_extract_items(court_block, "Fachgebiete"),
+            legal_principle_numbers=_extract_items(court_block, "Rechtssatznummern"),
             linked_decisions=linked,
+            leitsatz=_fix_encoding(court_block.get("Leitsatz", "")),
+            decision_type=court_block.get("Entscheidungsart", ""),
             document_url=general.get("DokumentUrl", ""),
             full_decision_url=jud.get("GesamteEntscheidungUrl", ""),
             legal_principles_url=jud.get("RechtssaetzeUrl", ""),
